@@ -1,6 +1,5 @@
 {
-    "video_directory": "./videos",
-    "server_port": 8080,
-    "server_host": "localhost",
-    "static_directory": "./static"
+    "ip_cameras": [
+        "172.32.0.93"
+    ]
 }

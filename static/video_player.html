@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ video_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #333;
+        }
+        video {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+        .actions {
+            list-style: none;
+            padding: 0;
+        }
+        .actions li {
+            margin: 5px 0;
+        }
+        .actions strong {
+            color: #007BFF;
+        }
+        .navigation {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .navigation a {
+            padding: 10px 20px;
+            text-decoration: none;
+            color: #fff;
+            background-color: #007BFF;
+            border-radius: 5px;
+            margin: 0 10px;
+        }
+        .navigation a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Видео: {{ video_name }}</h1>
+
+    <!-- Видеоплеер -->
+    <video width="640" height="360" controls>
+        <source src="{{ video_url }}" type="video/mp4">
+        Ваш браузер не поддерживает видео.
+    </video>
+
+    <!-- Список действий -->
+    <h2>Действия:</h2>
+    <ul class="actions">
+        {% for action, action_time in actions %}
+        <li><strong>{{ action }}</strong> в <strong>{{ action_time }}</strong></li>
+        {% endfor %}
+    </ul>
+
+    <!-- Навигация -->
+    <div class="navigation">
+        <a href="/">На главную</a>
+        <a href="/videos">Все видео</a>
+    </div>
+
+</body>
+</html>

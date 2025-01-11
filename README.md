@@ -4,10 +4,11 @@
 ```commandline
 IP_USB_CAM_Server/
 ├── static/                     # Статические файлы (CSS, JS, изображения, HTML)
-│   ├── index.html
-│   └── images/
-├── tests/
-│   └── functional_tests.py     # Функциональные тесты
+│   ├── main_page.html
+│   └── videos.html
+├── media/                     # Записи видео
+│   └── 172_32_0_93
+│       └── <date>_<time>_<id in DB>.mp4
 ├── docs/                       # Документация проекта
 ├── requirements.txt            # Список зависимостей Python
 ├── README.md                   # Описание проекта
@@ -44,13 +45,20 @@ IP_USB_CAM_Server/
 Конфигурация сервера хранится в файле `config.json`. Пример:
 ```json
 {
-    "server_host": "localhost",
-    "server_port": 8080,
-    "static_directory": "./static",
-    "video_directory": "./videos"
+    "ip_cameras": [
+        "172.32.0.93"
+    ]
 }
 ```
 
 ## Примечания:
 - Видео сохраняются в формате `.mp4`, `.mkv`, `.avi` и могут быть проиграны через веб-интерфейс.
 - Веб-интерфейс доступен на `http://<server-ip>:8080/videos`.
+
+
+## Работа с БД:
+Инициализация БД и создание тестовых метаданных для видео media/172_32_0_93/2025_01_11_15_50_id1.mp4
+```commandline
+python db_functions.py
+```
+После запуска создастся metadata.db, где все будет

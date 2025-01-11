@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP USB CAM Server</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        header {
+            background-color: #0078d7;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #e0ffe0;
+            border: 1px solid #0a7c0a;
+            color: #0a7c0a;
+            border-radius: 5px;
+            font-size: 1.2rem;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #0078d7;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        a:hover {
+            background-color: #005bb5;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 10px;
+            text-align: center;
+            background-color: #f4f4f9;
+            font-size: 0.9rem;
+        }
+
+        .stream-link {
+            display: block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #0078d7;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .stream-link:hover {
+            background-color: #005bb5;
+        }
+
+        .camera-links {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>IP USB CAM Server</h1>
+    </header>
+
+    <div class="container">
+        <p class="status">Камеры активны. IP-адреса:</p>
+
+        <!-- Генерация кнопок для всех камер -->
+        <div class="camera-links">
+            {% for camera in cameras %}
+                <a href="{{ camera.stream_url }}" class="stream-link">Прямая трансляция камеры {{ camera.ip }}</a>
+            {% endfor %}
+        </div>
+
+        <a href="/videos">Перейти к видео</a>
+    </div>
+
+    <footer>
+        &copy; 2025 IP USB CAM Server. Все права защищены.
+    </footer>
+</body>
+</html>
