@@ -105,6 +105,7 @@
         <div class="camera-links">
             {% for camera in cameras %}
                 <a href="{{ camera.stream_url }}" class="stream-link">Прямая трансляция камеры {{ camera.ip }}</a>
+                <a href="/masks/{{ camera.ip }}">Задать маску для {{ camera.ip }}</a>
             {% endfor %}
         </div>
 

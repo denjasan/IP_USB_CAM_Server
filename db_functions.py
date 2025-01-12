@@ -1,6 +1,50 @@
 import sqlite3
-
 from datetime import datetime
+import json
+
+
+def delete_masks_by_ip(ip_cam_address):
+    """
+    Удаляет все маски для указанного IP-адреса камеры.
+    """
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Masks WHERE ip_cam_address = ?", (ip_cam_address,))
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"Ошибка удаления масок: {e}")
+        return False
+    finally:
+        conn.close()
+    return True
+
+
+def db_save_masks(ip_cam_address, masks):
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    try:
+        print(masks)
+        cursor.execute('DELETE FROM Masks WHERE ip_cam_address = ?', (ip_cam_address,))
+        data = [(ip_cam_address, json.dumps(mask)) for mask in masks]
+        cursor.executemany('INSERT INTO Masks (ip_cam_address, mask) VALUES (?, ?)', data)
+        conn.commit()
+        print(f"Сохранено {len(masks)} масок для {ip_cam_address}")
+    except sqlite3.Error as e:
+        print(f"Ошибка сохранения масок: {e}")
+    finally:
+        conn.close()
+
+
+def get_masks(ip_cam_address):
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT mask FROM Masks WHERE ip_cam_address = ?', (ip_cam_address,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Преобразуем список строк JSON в список объектов
+    return [json.loads(row[0]) for row in rows] if rows else []
 
 def test_data():
     # Соединение с базой данных
@@ -65,8 +109,7 @@ def initialize_database():
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Masks (
         ip_cam_address TEXT,
-        mask1 TEXT,
-        mask2 TEXT
+        mask TEXT
     )
     ''')
 

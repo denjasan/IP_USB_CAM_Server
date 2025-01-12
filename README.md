@@ -5,6 +5,7 @@
 IP_USB_CAM_Server/
 ├── static/                     # Статические файлы (CSS, JS, изображения, HTML)
 │   ├── main_page.html
+│   ├── video_player.html
 │   └── videos.html
 ├── media/                     # Записи видео
 │   └── 172_32_0_93
@@ -12,6 +13,7 @@ IP_USB_CAM_Server/
 ├── docs/                       # Документация проекта
 ├── requirements.txt            # Список зависимостей Python
 ├── README.md                   # Описание проекта
+├── db_functions                # Функции для работы с Базой Данных
 ├── config.json                 # Параметры для конфигурации сервера
 └── server.py                   # Сам сервер
 ```
