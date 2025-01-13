@@ -1,161 +1,241 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mask Editor</title>
-    <style>
-        #image-container {
-            position: relative;
-            width: 2304px;
-            height: 1296px;
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        img {
-            width: 100%;
-            height: 100%;
-        }
-        .button-container {
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Редактор масок{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Центрирование контейнера */
+    #zoom-container {
+        position: relative;
+        overflow: scroll; /* Для прокрутки */
+        width: 1152px; /* Адаптация под экран */
+        height: 648px; /* Высота рабочей области */
+        margin: 20px auto; /* Центрирование */
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #image-container {
+        position: relative;
+        width: 2304px;
+        height: 1296px;
+        transform-origin: 0 0; /* Точка масштабирования */
+    }
+
+    canvas, img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Киберпанковый стиль для кнопок */
+    .button-container, .zoom-controls {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .button-container button, .zoom-controls button {
+        background-color: #121212;
+        color: #FFD700; /* Золотистый */
+        border: 2px solid #FFD700;
+        padding: 10px 20px;
+        font-size: 1rem;
+        font-family: 'Courier New', Courier, monospace;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.8), 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    .button-container button:hover, .zoom-controls button:hover {
+        background-color: #FFD700;
+        color: #121212;
+        text-shadow: none;
+    }
+
+    /* Заголовки */
+    h1 {
+        text-align: center;
+        color: #FFD700;
+        font-size: 1.8rem;
+        margin: 20px 0;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
     <h1>Редактор масок для камеры {{ ip_cam_address }}</h1>
-    <a href="/">Вернуться на главную</a>
     <h1>Кадр камеры:</h1>
-    <div id="image-container">
-        <img id="camera-image" src="{{ image_url }}" alt="Кадр камеры">
-        <canvas id="mask-canvas"></canvas>
+
+    <!-- Кнопки управления зумом -->
+    <div class="zoom-controls">
+        <button id="zoom-in">Увеличить</button>
+        <button id="zoom-out">Уменьшить</button>
+        <button id="reset-zoom">Сбросить масштаб</button>
     </div>
+
+    <!-- Контейнер для зума и прокрутки -->
+    <div id="zoom-container">
+        <div id="image-container">
+            <img id="camera-image" src="{{ image_url }}" alt="Кадр камеры">
+            <canvas id="mask-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Кнопки управления масками -->
     <div class="button-container">
         <button id="save-masks">Сохранить маски</button>
         <button id="clear-masks">Удалить все маски</button>
     </div>
+</div>
 
-    <script>
-        const canvas = document.getElementById('mask-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 2304; // Полное разрешение
-        canvas.height = 1296;
+<script>
+    const canvas = document.getElementById('mask-canvas');
+    const ctx = canvas.getContext('2d');
+    const zoomContainer = document.getElementById('zoom-container');
+    const imageContainer = document.getElementById('image-container');
+    const image = document.getElementById('camera-image');
 
-        const image = document.getElementById('camera-image'); // Замените id на 'camera-image'
-        let drawing = false;
-        let masks = []; // Новые маски
-        const oldMasks = {{ old_masks | tojson | safe }} || []; // Старые маски
+    canvas.width = 2304; // Полное разрешение
+    canvas.height = 1296;
 
-        // Функция для отрисовки всех масок
-        function drawMasks() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Очищаем холст
-            ctx.drawImage(image, 0, 0, canvas.width, canvas.height); // Рисуем изображение
+    let drawing = false;
+    let masks = []; // Новые маски
+    const oldMasks = {{ old_masks | tojson | safe }} || []; // Старые маски
+    let scale = 1; // Текущий масштаб
+    const maxScale = 3;
+    const minScale = 0.2;
 
-            // Рисуем старые маски (красные)
-            ctx.strokeStyle = 'red';
-            ctx.lineWidth = 3;
-            oldMasks.forEach(mask => drawRectangle(mask));
+    // Устанавливаем начальный зум, чтобы изображение вписывалось в поле
+    const containerWidth = zoomContainer.clientWidth;
+    const containerHeight = zoomContainer.clientHeight;
+    scale = Math.min(containerWidth / canvas.width, containerHeight / canvas.height);
+    updateZoom();
 
-            // Рисуем новые маски (черные)
-            ctx.strokeStyle = 'black';
-            masks.forEach(mask => drawRectangle(mask));
+    // Функция для отрисовки всех масок
+    function drawMasks() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Очищаем холст
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height); // Рисуем изображение
+
+        // Рисуем старые маски (красные)
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3 / scale; // Коррекция толщины линии
+        oldMasks.forEach(mask => drawRectangle(mask));
+
+        // Рисуем новые маски (черные)
+        ctx.strokeStyle = 'black';
+        masks.forEach(mask => drawRectangle(mask));
+    }
+
+    // Вспомогательная функция для рисования прямоугольников
+    function drawRectangle(mask) {
+        const x = mask.width < 0 ? mask.x + mask.width : mask.x;
+        const y = mask.height < 0 ? mask.y + mask.height : mask.y;
+        const width = Math.abs(mask.width);
+        const height = Math.abs(mask.height);
+        ctx.strokeRect(x, y, width, height);
+    }
+
+    // Обработка событий рисования
+    canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / scale;
+        const y = (e.clientY - rect.top) / scale;
+        masks.push({ x, y, width: 0, height: 0 });
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / scale;
+        const y = (e.clientY - rect.top) / scale;
+        const mask = masks[masks.length - 1];
+        mask.width = x - mask.x;
+        mask.height = y - mask.y;
+
+        drawMasks(); // Обновляем холст
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        drawing = false;
+        const mask = masks[masks.length - 1];
+        if (Math.abs(mask.width) < 1 || Math.abs(mask.height) < 1) {
+            masks.pop(); // Удаляем слишком маленькие маски
+        }
+        drawMasks();
+    });
+
+    // Управление зумом
+    document.getElementById('zoom-in').addEventListener('click', () => {
+        scale = Math.min(scale + 0.2, maxScale);
+        updateZoom();
+    });
+
+    document.getElementById('zoom-out').addEventListener('click', () => {
+        scale = Math.max(scale - 0.2, minScale);
+        updateZoom();
+    });
+
+    document.getElementById('reset-zoom').addEventListener('click', () => {
+        scale = Math.min(containerWidth / canvas.width, containerHeight / canvas.height);
+        updateZoom();
+    });
+
+    function updateZoom() {
+        imageContainer.style.transform = `scale(${scale})`;
+        zoomContainer.scrollLeft = (imageContainer.offsetWidth * scale - zoomContainer.clientWidth) / 2;
+        zoomContainer.scrollTop = (imageContainer.offsetHeight * scale - zoomContainer.clientHeight) / 2;
+        drawMasks();
+    }
+
+    document.getElementById('save-masks').addEventListener('click', () => {
+        console.log('Save button clicked'); // Лог
+        const validMasks = masks.filter(mask => mask.width !== 0 && mask.height !== 0);
+
+        if (validMasks.length === 0) {
+            alert("Ни одной валидной маски не найдено.");
+            return;
         }
 
-        // Вспомогательная функция для рисования прямоугольников
-        function drawRectangle(mask) {
-            const x = mask.width < 0 ? mask.x + mask.width : mask.x;
-            const y = mask.height < 0 ? mask.y + mask.height : mask.y;
-            const width = Math.abs(mask.width);
-            const height = Math.abs(mask.height);
-            ctx.strokeRect(x, y, width, height);
+        fetch(`/save_masks/{{ ip_cam_address }}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ masks: validMasks })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Ошибка сохранения масок.");
+            }
+            return response.json();
+        })
+        .then(data => alert(data.message))
+        .catch(error => console.error("Ошибка сохранения масок:", error));
+    });
+
+    document.getElementById('clear-masks').addEventListener('click', () => {
+        console.log('Clear button clicked'); // Лог
+        if (confirm("Вы уверены, что хотите удалить все маски?")) {
+            fetch(`/clear_masks/{{ ip_cam_address }}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();  // Обновляем страницу для очистки масок
+            })
+            .catch(error => console.error("Ошибка удаления масок:", error));
         }
+    });
 
-        // Обработка событий рисования
-        canvas.addEventListener('mousedown', (e) => {
-            drawing = true;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            masks.push({ x, y, width: 0, height: 0 });
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!drawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const mask = masks[masks.length - 1];
-            mask.width = x - mask.x;
-            mask.height = y - mask.y;
-
-            drawMasks(); // Обновляем холст
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            drawing = false;
-
-            // Проверяем валидность последней маски
-            const mask = masks[masks.length - 1];
-            if (Math.abs(mask.width) < 1 || Math.abs(mask.height) < 1) {
-                masks.pop(); // Удаляем слишком маленькие маски
-            }
-
-            drawMasks(); // Обновляем холст
-        });
-
-        document.getElementById('save-masks').addEventListener('click', () => {
-            console.log('Save button clicked'); // Лог
-            const validMasks = masks.filter(mask => mask.width !== 0 && mask.height !== 0);
-
-            if (validMasks.length === 0) {
-                alert("Ни одной валидной маски не найдено.");
-                return;
-            }
-
-            fetch(`/save_masks/{{ ip_cam_address }}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ masks: validMasks })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Ошибка сохранения масок.");
-                }
-                return response.json();
-            })
-            .then(data => alert(data.message))
-            .catch(error => console.error("Ошибка сохранения масок:", error));
-        });
-
-        document.getElementById('clear-masks').addEventListener('click', () => {
-            console.log('Clear button clicked'); // Лог
-            if (confirm("Вы уверены, что хотите удалить все маски?")) {
-                fetch(`/clear_masks/{{ ip_cam_address }}`, {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    location.reload();  // Обновляем страницу для очистки масок
-                })
-                .catch(error => console.error("Ошибка удаления масок:", error));
-            }
-        });
-
-
-        // Первоначальная отрисовка
-        image.onload = () => {
-            drawMasks(); // Отрисовываем маски только после загрузки изображения
-        };
-
-        image.onerror = () => {
-            alert('Ошибка загрузки изображения');
-        };
-
-    </script>
-</body>
-</html>
+    image.onload = drawMasks;
+    image.onerror = () => alert('Ошибка загрузки изображения');
+</script>
+{% endblock %}

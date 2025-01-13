@@ -1,78 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Поиск действий и Видео</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
+{% extends "base.html" %}
 
-        h1 {
-            margin-top: 20px;
-        }
+{% block title %}Все Видео{% endblock %}
 
-        .container {
-            text-align: center;
-            max-width: 800px;
-            margin: 20px auto;
-        }
-
-        .video-list {
-            margin-top: 30px;
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .video-list li {
-            margin: 10px 0;
-        }
-
-        a {
-            text-decoration: none;
-            color: #0078d7;
-            font-weight: bold;
-        }
-
-        footer {
-            margin-top: auto;
-            padding: 10px;
-            text-align: center;
-            background-color: #f4f4f9;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-    <h1>Поиск действий и Видео</h1>
-
-    <div class="container">
-        <!-- Форма поиска -->
-        <form method="GET" action="/search">
-            <input type="text" name="query" placeholder="Введите действие..." required>
-            <button type="submit">Поиск</button>
-        </form>
-
-        <h2>Доступные видео:</h2>
+{% block content %}
+    {% if actions %}
+        <h1>Результаты поиска действий:</h1>
+        <ul class="search-results">
+            {% for action in actions %}
+                <li>
+                    <a href="{{ action.video_url }}">{{ action.action_name }}</a> - {{ action.timestamp }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <h1>Все доступные видео:</h1>
         <ul class="video-list">
             {% for video in videos %}
                 <li><a href="{{ video.video_url }}">{{ video.video_name }}</a></li>
             {% endfor %}
         </ul>
-    </div>
-
-    <footer>
-        &copy; 2025 IP USB CAM Server. Все права защищены.
-    </footer>
-</body>
-</html>
+    {% endif %}
+{% endblock %}

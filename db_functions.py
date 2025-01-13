@@ -61,14 +61,14 @@ def test_data():
     ''', (video_path, start_time))
 
     # Вставка данных в таблицу Actions
-    action = "появился человек"
+    action = "humAn detected".lower()
     action_time = "15:50:12"
     cursor.execute('''
         INSERT INTO Actions (video_id, action, action_time)
         VALUES (?, ?, ?)
     ''', (1, action, action_time))
 
-    action = "рука закрывает камеру"
+    action = "HanD close the caMera".lower()
     action_time = "15:50:15"
     cursor.execute('''
             INSERT INTO Actions (video_id, action, action_time)
@@ -143,7 +143,7 @@ def search_actions(query):
     FROM Actions a
     JOIN MetaData m ON a.video_id = m.id
     WHERE a.action LIKE ?
-    ''', ('%' + query + '%',))
+    ''', ('%' + query.lower() + '%',))
 
     actions = cursor.fetchall()
 

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все Видео</title>
+    <style>
+        /* Основной фон */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #001F3D;  /* Темный синий фон */
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            font-size: 1.1rem;
+            overflow-x: hidden;
+        }
+
+        /* Навигация */
+        .navigation {
+            background: #003366;  /* Темный синий оттенок */
+            color: white;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .navigation .nav-left {
+            display: flex;
+            align-items: center;
+            margin-right: auto; /* Сдвигает все вправо */
+        }
+
+        .navigation a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            margin-right: 30px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            position: relative;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .navigation a:hover {
+            transform: translateY(-5px);
+            color: #00FFFF;
+        }
+
+        .navigation a.active {
+            color: #00FFFF;
+            font-weight: bold;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background-image: linear-gradient(45deg, #00BFFF, #0099CC);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: logoGradient 5s ease infinite;
+            transition: color 0.3s ease;
+        }
+
+        @keyframes logoGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Основной контент */
+        .content {
+            flex-grow: 1;
+            padding: 40px 20px;
+            text-align: center;
+            background: url('https://source.unsplash.com/1600x900/?technology') center/cover no-repeat;
+            background-attachment: fixed;
+            color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        h1, h2 {
+            font-size: 3rem;
+            margin: 20px 0;
+            color: #FFD700; /* Желто-золотой цвет */
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+        }
+
+        /* Стиль для видео и результатов поиска */
+        .video-list, .search-results {
+            margin-top: 30px;
+            list-style-type: none;
+            padding: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .video-list li, .search-results li {
+            margin: 10px 0;
+            font-size: 1.2rem;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .video-list a, .search-results a {
+            text-decoration: none;
+            color: #FFD700; /* Желто-золотой цвет */
+            font-weight: bold;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+
+        .video-list a:hover, .search-results a:hover {
+            color: #00BFFF;
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        footer {
+            background-color: #003366;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            margin-top: auto;
+            font-size: 1.1rem;
+        }
+
+        /* Форма поиска */
+        .search-form {
+            margin: 20px 0;
+            position: absolute;
+            top: 70px; /* Отступ, чтобы не закрывалась шапкой */
+            right: 30px;  /* Сдвиг формы на 20px левее */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #001F3D;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            width: 250px;
+        }
+
+        .search-form input {
+            padding: 10px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            border: 2px solid #00BFFF;
+            border-radius: 5px;
+            background-color: #001F3D;
+            color: #fff;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-form button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #00BFFF;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-form button:hover {
+            background-color: #00FFFF;
+        }
+
+        .search-icon {
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, color 0.3s ease;
+            margin-right: 40px;  /* Сдвиг лупы на 20px левее */
+        }
+
+        .search-icon:hover {
+            transform: scale(1.2);
+            color: #00FFFF;
+        }
+
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 768px) {
+            .navigation {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 15px;
+            }
+
+            .search-form {
+                width: 80%;
+                right: 0;
+                top: auto;
+                bottom: 60px;
+                margin: 0 auto;
+            }
+
+            .search-icon {
+                font-size: 1.8rem;
+                margin-top: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navigation a {
+                font-size: 1rem;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .search-form {
+                width: 90%;
+                right: 0;
+                top: auto;
+                bottom: 60px;
+                margin: 0 auto;
+            }
+        }
+        .container {
+            text-align: center;
+            max-width: 1000px;
+            margin: 40px auto;
+        }
+
+        .camera-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .camera-block {
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f9;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            text-align: center;
+        }
+
+        .status {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .stream-link, .mask-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #0078d7;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .stream-link:hover, .mask-link:hover {
+            background-color: #005bb5;
+        }
+    </style>
+    {% block extra_styles %}  <!-- Блок для добавления дополнительных стилей -->
+    {% endblock %}
+</head>
+<body>
+
+    <!-- Навигация -->
+    <div class="navigation">
+        <div class="nav-left">
+            <a href="/" class="logo">IP-USB CAM Server</a>
+        </div>
+        <!-- Кнопки "Все видео" и иконка поиска выровнены справа -->
+        <a href="/videos" class="">Все видео</a>
+        <span class="search-icon" onclick="toggleSearchForm()">🔍</span>
+    </div>
+
+    <!-- Форма поиска -->
+    <div class="search-form" id="searchForm">
+        <form method="GET" action="/search">
+            <input type="text" name="query" placeholder="Введите действие..." required>
+            <button type="submit">Поиск</button>
+        </form>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="content">
+        {% block content %}
+        <!-- Контент будет заменен в каждом дочернем шаблоне -->
+        {% endblock %}
+    </div>
+
+    <footer>
+        &copy; 2025 IP-USB CAM Server. Все права защищены.
+    </footer>
+
+    <script>
+        // Функция для переключения видимости формы поиска
+        function toggleSearchForm() {
+            const searchForm = document.getElementById('searchForm');
+            searchForm.style.display = (searchForm.style.display === 'block') ? 'none' : 'block';
+        }
+    </script>
+
+</body>
+</html>

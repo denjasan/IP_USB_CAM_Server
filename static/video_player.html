@@ -1,53 +1,52 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ video_name }}</title>
+{% extends "base.html" %}
+
+{% block title %}Видео: {{ video_name }}{% endblock %}
+
+{% block extra_styles %}
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        h1 {
-            color: #333;
-        }
         video {
+            margin-top: 20px;
             display: block;
             margin: 0 auto;
-            max-width: 100%;
+            max-width: 80%;
+            border: 5px solid #FFD700;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(255, 215, 0, 0.3);
         }
+
+        /* Обертка для списка действий */
+        .actions-wrapper {
+            background-color: rgba(255, 215, 0, 0.1); /* Полупрозрачный желтый фон */
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            width: 80%;
+            max-width: 900px;
+            box-shadow: 0px 5px 15px rgba(255, 215, 0, 0.5);
+            margin-bottom: 50px; /* Немного отступа снизу */
+        }
+
         .actions {
             list-style: none;
             padding: 0;
+            margin: 0;
+            text-align: left;
         }
+
         .actions li {
-            margin: 5px 0;
+            margin: 10px 0;
+            font-size: 1.2rem;
         }
+
         .actions strong {
-            color: #007BFF;
-        }
-        .navigation {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .navigation a {
-            padding: 10px 20px;
-            text-decoration: none;
-            color: #fff;
-            background-color: #007BFF;
-            border-radius: 5px;
-            margin: 0 10px;
-        }
-        .navigation a:hover {
-            background-color: #0056b3;
+            color: #FFD700; /* Желто-золотой цвет */
         }
     </style>
-</head>
-<body>
+{% endblock %}
 
+{% block content %}
+
+    <!-- Заголовок видео -->
     <h1>Видео: {{ video_name }}</h1>
 
     <!-- Видеоплеер -->
@@ -56,19 +55,13 @@
         Ваш браузер не поддерживает видео.
     </video>
 
-    <!-- Список действий -->
-    <h2>Действия:</h2>
-    <ul class="actions">
-        {% for action, action_time in actions %}
-        <li><strong>{{ action }}</strong> в <strong>{{ action_time }}</strong></li>
-        {% endfor %}
-    </ul>
-
-    <!-- Навигация -->
-    <div class="navigation">
-        <a href="/">На главную</a>
-        <a href="/videos">Все видео</a>
+    <!-- Обертка для списка действий -->
+    <div class="actions-wrapper">
+        <h2>Действия:</h2>
+        <ul class="actions">
+            {% for action, action_time in actions %}
+                <li><strong>{{ action }}</strong> в <strong>{{ action_time }}</strong></li>
+            {% endfor %}
+        </ul>
     </div>
-
-</body>
-</html>
+{% endblock %}

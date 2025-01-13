@@ -1,17 +1,18 @@
 import os
 import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import unquote
-from jinja2 import Template  # Для рендеринга HTML-шаблонов
+from jinja2 import Environment, FileSystemLoader
 import sqlite3
-import mimetypes
 
 from db_functions import search_actions, get_actions_for_video, get_masks, db_save_masks, delete_masks_by_ip
 
 
 class CustomHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, config=None, **kwargs):
-        self.config = config
+    def __init__(self, *args, **kwargs):
+        with open("config.json", 'r', encoding='utf-8') as f:
+            self.config = json.load(f)
+        # Правильная инициализация Jinja2 для загрузки шаблонов
+        self.env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), 'static')))
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
@@ -21,9 +22,11 @@ class CustomHandler(SimpleHTTPRequestHandler):
         elif self.path == '/videos':
             self.render_videos_page()
         elif self.path.startswith('/videos/') and len(self.path.split('/')) >= 4:
-            self.show_video_page()
+            self.render_video_player()
         elif self.path.startswith('/masks/'):
             self.render_masks_page(self.path.split('/')[-1])
+        elif self.path.startswith('/search'):
+            self.search_for_actions()
         else:
             super().do_GET()
 
@@ -34,8 +37,6 @@ class CustomHandler(SimpleHTTPRequestHandler):
             self.clear_masks()
         elif self.path.startswith('/trans_data/'):
             self.take_data()
-        else:
-            super().do_GET()
 
     def take_data(self):
         data = {
@@ -43,9 +44,9 @@ class CustomHandler(SimpleHTTPRequestHandler):
             'temperature': 29.2,  # Пример температуры
             'humidity': 88,  # Пример влажности
             'action': "door open",  # Пример действия
-            # 'coords': {"x": 100, "y": 200, "w": 50, "h": 50}  # Координаты движения
         }
-        # ToDo: добавляем запись 30 секунд по 16 кадров, получаемых по rtsp, удаляем первую, если приходит action.None, если не будет пакета, то камера выключена, температуру и влажность передаем на главную страницу
+        # ToDo: добавляем запись 30 секунд по 16 кадров, получаемых по rtsp, удаляем первую, если приходит action.None,
+        #  если не будет пакета, то камера выключена, температуру и влажность передаем на главную страницу
 
     def clear_masks(self):
         ip_cam_address = self.path[len('/clear_masks/'):]
@@ -101,7 +102,7 @@ class CustomHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
         with open(masks_template, "r", encoding="utf-8") as file:
-            template = Template(file.read())
+            template = self.env.from_string(file.read())  # Используем from_string для рендеринга
             rendered_content = template.render(
                 ip_cam_address=ip_cam_address,
                 old_masks=masks,
@@ -109,7 +110,7 @@ class CustomHandler(SimpleHTTPRequestHandler):
             )
             self.wfile.write(rendered_content.encode("utf-8"))
 
-    def show_video_page(self):
+    def render_video_player(self):
         """Отображение страницы видео с действиями."""
         # Получаем название видео из URL
         video_name = self.path[len('/videos/'):]
@@ -144,22 +145,13 @@ class CustomHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-type", "text/html; charset=utf-8")
         self.end_headers()
 
-        # Загружаем шаблон
-        static_dir = os.path.join(".", "static")
-        video_template_file = os.path.join(static_dir, "video_player.html")
-
-        if not os.path.exists(video_template_file):
-            self.send_error(404, "Template file not found")
-            return
-
-        with open(video_template_file, "r", encoding="utf-8") as file:
-            template = Template(file.read())
-            rendered_content = template.render(
-                video_name=video_name,
-                video_url=f"/media/{video_name}",  # Путь для браузера
-                actions=actions
-            )
-            self.wfile.write(rendered_content.encode("utf-8"))
+        template = self.env.get_template('video_player.html')  # Загружаем шаблон
+        rendered_content = template.render(
+            video_name=video_name,
+            video_url=f"/media/{video_name}",  # Путь для браузера
+            actions=actions
+        )
+        self.wfile.write(rendered_content.encode("utf-8"))
 
     def render_main_page(self):
         """Отображение главной страницы."""
@@ -178,7 +170,7 @@ class CustomHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
         with open(index_file, "r", encoding="utf-8") as file:
-            template = Template(file.read())
+            template = self.env.from_string(file.read())  # Используем from_string для рендеринга
             rendered_content = template.render(cameras=cameras)
             self.wfile.write(rendered_content.encode("utf-8"))
 
@@ -199,8 +191,42 @@ class CustomHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
         with open(videos_file, "r", encoding="utf-8") as file:
-            template = Template(file.read())
-            rendered_content = template.render(videos=videos)
+            template = self.env.from_string(file.read())  # Используем from_string для рендеринга
+            rendered_content = template.render(videos=videos, actions=[])
+            self.wfile.write(rendered_content.encode("utf-8"))
+
+    def search_for_actions(self):
+        # Получаем поисковый запрос
+        query = self.path.split('?')[1].split('=')[1]
+        # Ищем действия в базе данных
+        actions = search_actions(query)
+        formatted_actions = [
+            {
+                'action_name': action[0].lower(),  # Приводим к нижнему регистру
+                'timestamp': action[1],
+                'video_url': action[2]
+            }
+            for action in actions
+        ]
+
+        # Отображаем страницу с результатами поиска
+        static_dir = os.path.join(".", "static")
+        videos_file = os.path.join(static_dir, "videos.html")
+
+        if not os.path.exists(videos_file):
+            self.send_error(404, "videos.html file not found")
+            return
+
+        # Получаем список видео для всех камер
+        videos = self.get_videos_for_cameras()
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.end_headers()
+
+        with open(videos_file, "r", encoding="utf-8") as file:
+            template = self.env.from_string(file.read())  # Используем from_string для рендеринга
+            rendered_content = template.render(videos=videos, actions=formatted_actions)
             self.wfile.write(rendered_content.encode("utf-8"))
 
     def get_videos_for_cameras(self):
@@ -234,32 +260,17 @@ class CustomHandler(SimpleHTTPRequestHandler):
         for ip in ip_cameras:
             cameras.append({
                 "ip": ip,
-                "stream_url": f"rtsp://{ip}/live/0"  # Формируем ссылку для rtsp потока
+                "stream_url": f"rtsp://{ip}/stream",
+                "is_active": True
             })
         return cameras
 
 
-def load_config(config_path="config.json"):
-    """Загрузка конфигурации из JSON."""
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Configuration file '{config_path}' not found!")
-    with open(config_path, "r") as file:
-        return json.load(file)
-
-
-def run(server_class=HTTPServer, handler_class=CustomHandler, config_path="config.json"):
-    """Запуск сервера."""
-    config = load_config(config_path)
-
-    server_host = config.get("server_host", "192.168.1.12")  # 192.168.0.3
-    server_port = config.get("server_port", 8080)
-    server_address = (server_host, server_port)
-
-    httpd = server_class(server_address, lambda *args, **kwargs: handler_class(*args, config=config, **kwargs))
-    print(f"Server running on http://{server_host}:{server_port}/")
-    print(f"Videos available at http://{server_host}:{server_port}/videos")
+def run(server_class=HTTPServer, handler_class=CustomHandler, port=8080):
+    server_address = ('192.168.1.12', port) # 192.168.0.3
+    httpd = server_class(server_address, handler_class)
+    print(f"Server running http://{server_address[0]}:{server_address[1]}/...")
     httpd.serve_forever()
-
 
 if __name__ == "__main__":
     try:
